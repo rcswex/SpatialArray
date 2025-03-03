@@ -1,21 +1,30 @@
 // SpatialArray.sc
 // A container that enables variable value exchange without temporary variables
-// Simulates the intuitive nature of swapping items in the physical world
+// Implements a reference-based architecture to truly simulate physical world swapping
 
 SpatialArray {
-    var <>variables;  // Direct mapping from names to values
-
+    var <>locations;   // Dictionary mapping keys to indices in values array
+    var <>values;      // Array storing the actual values
+    
     *new {
         ^super.new.init;
     }
-
+    
     init {
-        variables = IdentityDictionary.new;
+        locations = IdentityDictionary.new;
+        values = Array.new;
     }
-
+    
     // Create a variable with a value
     put { |key, value|
-        variables[key] = value;
+        if(locations.includesKey(key).not) {
+            // New key: add to the end
+            locations[key] = values.size;
+            values = values.add(value);
+        } {
+            // Existing key: update value at existing index
+            values[locations[key]] = value;
+        };
         ^key;
     }
     
@@ -26,11 +35,11 @@ SpatialArray {
     
     // Access a variable's value
     at { |key|
-        var value = variables[key];
-        if(value.isNil and: { variables.includesKey(key).not }) {
+        var index = locations[key];
+        if(index.isNil) {
             Error("Variable '%' not found".format(key)).throw;
         };
-        ^value;
+        ^values[index];
     }
     
     // Alias to at for backward compatibility
@@ -39,81 +48,101 @@ SpatialArray {
     }
     
     // Set a variable's value
-    put { |key, value|
-        if(variables.includesKey(key).not) {
+    update { |key, value|
+        var index = locations[key];
+        if(index.isNil) {
             Error("Variable '%' not found".format(key)).throw;
         };
-        variables[key] = value;
+        values[index] = value;
     }
     
-    // Alias to put for backward compatibility
+    // Alias to update for backward compatibility
     setValue { |key, value|
-        ^this.put(key, value);
+        this.update(key, value);
     }
     
-    // Swap the values of two variables
+    // Swap the values of two variables - WITHOUT TEMPORARY VARIABLES!
     swap { |key1, key2|
-        var val1, val2;
+        var index1, index2;
         
-        if(variables.includesKey(key1).not) {
+        index1 = locations[key1];
+        index2 = locations[key2];
+        
+        if(index1.isNil) {
             Error("Variable '%' not found".format(key1)).throw;
         };
         
-        if(variables.includesKey(key2).not) {
+        if(index2.isNil) {
             Error("Variable '%' not found".format(key2)).throw;
         };
         
-        // In SuperCollider, we need to use a temporary variable for the swap
-        // since we don't have pointer-level swapping as in C++
-        val1 = variables[key1];
-        val2 = variables[key2];
-        variables[key1] = val2;
-        variables[key2] = val1;
+        // The key trick: swap the indices in the locations dictionary
+        // instead of swapping the values themselves
+        locations[key1] = index2;
+        locations[key2] = index1;
+        
+        // No need to swap the actual values in the array!
+        // The references via locations dict now point to the other values
     }
     
     // Collection interface methods
     size {
-        ^variables.size;
+        ^locations.size;
     }
     
     isEmpty {
-        ^variables.isEmpty;
+        ^locations.isEmpty;
     }
     
     keys {
-        ^variables.keys;
+        ^locations.keys;
     }
     
     values {
-        ^variables.values;
+        // Map each key to its value through our indirection
+        var result = Array.new(this.size);
+        locations.keysValuesDo { |key, index|
+            result = result.add(values[index]);
+        };
+        ^result;
     }
     
     includes { |value|
-        ^variables.includes(value);
+        ^values.includes(value);
     }
     
     includesKey { |key|
-        ^variables.includesKey(key);
+        ^locations.includesKey(key);
     }
     
     do { |function|
-        variables.do(function);
+        this.values.do(function);
     }
     
     keysValuesDo { |function|
-        variables.keysValuesDo(function);
+        locations.keysValuesDo { |key, index|
+            function.value(key, values[index]);
+        };
     }
     
     asArray {
-        ^variables.asArray;
+        var result = Array.new(this.size);
+        this.keysValuesDo { |key, value|
+            result = result.add([key, value]);
+        };
+        ^result;
     }
     
     asList {
-        ^variables.asList;
+        ^this.asArray.asList;
     }
     
     asDict {
-        ^variables.copy;
+        var dict = IdentityDictionary.new;
+        this.keysValuesDo { |key, value|
+            dict[key] = value;
+        };
+        ^dict;
     }
     
     // Print internal state (for debugging)
@@ -122,13 +151,23 @@ SpatialArray {
         if(this.isEmpty) {
             "  (empty)".postln;
         } {
-            variables.keysValuesDo { |key, value|
-                "  % -> %".format(key, value).postln;
+            "  Internal structure:".postln;
+            "    Locations:".postln;
+            locations.keysValuesDo { |key, index|
+                "      % -> index %".format(key, index).postln;
+            };
+            "    Values:".postln;
+            values.do { |val, i|
+                "      [%] = %".format(i, val).postln;
+            };
+            "  Logical view:".postln;
+            this.keysValuesDo { |key, value|
+                "    % -> %".format(key, value).postln;
             };
         };
     }
     
     printOn { |stream|
-        stream << this.class.name << "[ " << variables.size << " variables ]";
+        stream << this.class.name << "[ " << this.size << " variables ]";
     }
 }

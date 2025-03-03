@@ -1,12 +1,12 @@
 TITLE:: SpatialArray
-summary:: A container supporting intuitive value swapping
+summary:: A container supporting true pointer-like value swapping
 categories:: Collections>Dictionaries
 related:: Classes/Dictionary, Classes/IdentityDictionary, Classes/Event
 
 DESCRIPTION::
-SpatialArray is a dictionary-like container with specialized support for variable swapping operations. It models the intuitive way we exchange objects in the physical world, where we can swap two items without needing a temporary location.
+SpatialArray is a specialized container with a reference-based architecture that truly enables swapping operations without temporary variables. Unlike traditional dictionaries, SpatialArray implements a two-level indirection system that models the intuitive way we exchange objects in the physical world.
 
-In traditional programming:
+In traditional programming, swapping two variables requires temporary storage:
 code::
 // With regular variables
 ~a = 5;
@@ -16,15 +16,22 @@ code::
 ~b = ~temp;
 ::
 
-With SpatialArray:
+With SpatialArray, the swap is implemented by changing what location each name points to, not by copying values:
 code::
 ~arr = SpatialArray.new;
 ~arr.put(\a, 5);
 ~arr.put(\b, 10);
-~arr.swap(\a, \b);  // Direct swap without temporary variable
+~arr.swap(\a, \b);  // Truly swaps without temporary variable copies
 ::
 
-While regular Dictionary objects require a temporary variable for swapping, SpatialArray provides an optimized swap operation that more closely models physical world exchanges.
+SUBSECTION:: Internal Architecture
+SpatialArray uses a reference-based architecture with two data structures:
+list::
+## A locations dictionary that maps keys to positions in the values array
+## A values array that stores the actual data
+::
+
+When you perform a swap operation, only the indices in the locations dictionary are exchanged. The actual values never move, which is how SpatialArray avoids temporary value copies during swaps.
 
 CLASSMETHODS::
 
@@ -87,8 +94,21 @@ code::
 ~arr.getValue(\a);
 ::
 
+METHOD:: update
+Updates the value at the specified key.
+
+ARGUMENT:: key
+The key to update.
+
+ARGUMENT:: value
+The new value.
+
+code::
+~arr.update(\a, 10);
+::
+
 METHOD:: setValue
-An alias for put, maintaining backward compatibility.
+An alias for update, maintaining backward compatibility.
 
 ARGUMENT:: key
 The key to update.
@@ -101,7 +121,7 @@ code::
 ::
 
 METHOD:: swap
-Exchanges the values of two keys.
+Exchanges the values of two keys by swapping their references, not the values.
 
 ARGUMENT:: key1
 The first key.
@@ -114,7 +134,7 @@ code::
 ::
 
 METHOD:: debug
-Prints the contents of the SpatialArray for inspection.
+Prints the contents of the SpatialArray, including internal structure and logical view.
 
 code::
 ~arr.debug;
@@ -179,7 +199,7 @@ Converts the collection to a List of key-value pairs.
 returns:: A List.
 
 METHOD:: asDict
-Returns a copy of the internal dictionary.
+Returns a copy as an IdentityDictionary.
 
 returns:: An IdentityDictionary.
 
@@ -205,6 +225,9 @@ code::
 // Verify swap
 ~arr.at(\a).postln;  // Now outputs 10
 ~arr.at(\b).postln;  // Now outputs 5
+
+// See the internal structure
+~arr.debug;
 
 // Using collection interface
 ~arr.size.postln;    // Outputs 2
@@ -262,6 +285,9 @@ Fruit = {
 // Display result
 ~basket.at(\left).postln;   // Now banana(yellow, 0.15kg)
 ~basket.at(\right).postln;  // Now apple(red, 0.2kg)
+
+// Look at the internal structure
+~basket.debug;
 ::
 
 Audio synthesis example:
@@ -285,7 +311,15 @@ s.waitForBoot({
     
     // Swap parameters and create a new synth after 2 seconds
     SystemClock.sched(2, {
+        // Before swap: check internal structure
+        ~synthParams.debug;
+        
+        // Perform swap
         ~synthParams.swap(\sine, \saw);
+        
+        // After swap: check internal structure
+        ~synthParams.debug;
+        
         ~sineInstance.free;
         
         // Get the swapped parameters

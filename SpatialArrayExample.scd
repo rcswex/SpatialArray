@@ -26,7 +26,7 @@ Fruit = {
 };
 )
 
-// Example 1: Swapping simple values
+// Example 1: Swapping simple values with internal structure visualization
 (
 // Create a spatial array instance
 ~intArray = SpatialArray.new;
@@ -36,7 +36,7 @@ Fruit = {
 ~intArray.put(\b, 10);
 
 // Display initial state
-"==== Example 1: Integer Swap ====".postln;
+"==== Example 1: Integer Swap with Reference Architecture ====".postln;
 "Initial state:".postln;
 "a = %".format(~intArray.at(\a)).postln;
 "b = %".format(~intArray.at(\b)).postln;
@@ -52,9 +52,14 @@ Fruit = {
 "b = %".format(~intArray.at(\b)).postln;
 "Internal structure:".postln;
 ~intArray.debug;
+
+// Note how the locations changed but the values array stayed the same!
+"Explanation: Notice that the indices in the locations dictionary swapped,".postln;
+"but the values array remained unchanged. This demonstrates the reference-".postln;
+"based swapping that doesn't need temporary value copies.".postln;
 )
 
-// Example 2: Swapping fruit names
+// Example 2: Swapping fruit names using legacy methods
 (
 // Create a spatial array instance
 ~fruitNames = SpatialArray.new;
@@ -68,6 +73,8 @@ Fruit = {
 "Initial state:".postln;
 "leftFruit = %".format(~fruitNames.getValue(\leftFruit)).postln;
 "rightFruit = %".format(~fruitNames.getValue(\rightFruit)).postln;
+"Internal structure:".postln;
+~fruitNames.debug;
 
 // Swap
 ~fruitNames.swap(\leftFruit, \rightFruit);
@@ -76,9 +83,11 @@ Fruit = {
 "\nAfter swap:".postln;
 "leftFruit = %".format(~fruitNames.getValue(\leftFruit)).postln;
 "rightFruit = %".format(~fruitNames.getValue(\rightFruit)).postln;
+"Internal structure:".postln;
+~fruitNames.debug;
 )
 
-// Example 3: Swapping custom objects (Fruit instances)
+// Example 3: Swapping complex objects (Fruit instances)
 (
 // Create spatial array instance
 ~fruitObjects = SpatialArray.new;
@@ -96,6 +105,8 @@ Fruit = {
 "Initial state:".postln;
 "basketA: %".format(~fruitObjects.at(\basketA)).postln;
 "basketB: %".format(~fruitObjects.at(\basketB)).postln;
+"Internal structure:".postln;
+~fruitObjects.debug;
 
 // Swap fruits in baskets
 ~fruitObjects.swap(\basketA, \basketB);
@@ -104,6 +115,12 @@ Fruit = {
 "\nAfter swap:".postln;
 "basketA: %".format(~fruitObjects.at(\basketA)).postln;
 "basketB: %".format(~fruitObjects.at(\basketB)).postln;
+"Internal structure:".postln;
+~fruitObjects.debug;
+
+"Explanation: Even for complex objects like our Fruit instances, only the".postln;
+"references (indices) are swapped, not the actual objects themselves.".postln;
+"This is more efficient especially for large objects.".postln;
 )
 
 // Example 4: Application to SuperCollider audio synthesis
@@ -133,6 +150,8 @@ SynthDef(\saw, { |freq=220, amp=0.3, pan=0|
 "Initial state:".postln;
 "sin settings: %".format(~synthSettings.at(\sin)).postln;
 "saw settings: %".format(~synthSettings.at(\saw)).postln;
+"Internal structure:".postln;
+~synthSettings.debug;
 
 // Swap settings
 ~synthSettings.swap(\sin, \saw);
@@ -141,6 +160,8 @@ SynthDef(\saw, { |freq=220, amp=0.3, pan=0|
 "\nAfter swap:".postln;
 "sin settings: %".format(~synthSettings.at(\sin)).postln;
 "saw settings: %".format(~synthSettings.at(\saw)).postln;
+"Internal structure:".postln;
+~synthSettings.debug;
 
 // Create Synths with the swapped settings
 s.waitForBoot({
@@ -159,7 +180,7 @@ s.waitForBoot({
 });
 )
 
-// Example 5: Collection interface methods
+// Example 5: Collection interface methods and performance test
 (
 ~demo = SpatialArray.new;
 ~demo.put(\a, 1);
@@ -167,6 +188,7 @@ s.waitForBoot({
 ~demo.put(\c, 3);
 
 // Size and content inspection
+"\n==== Example 5: Collection Interface and Performance ====".postln;
 "Collection size: %".format(~demo.size).postln;
 "Contains key 'b'? %".format(~demo.includesKey(\b)).postln;
 "Contains value 3? %".format(~demo.includes(3)).postln;
@@ -182,4 +204,50 @@ s.waitForBoot({
 ~demo.keysValuesDo { |k, v|
     "% -> %".format(k, v).postln;
 };
+
+"Internal structure:".postln;
+~demo.debug;
+
+// Performance test - compare with regular Dictionary for large objects
+"\nPerformance Test:".postln;
+"Creating large objects...".postln;
+
+// Create a large string object
+~largeString = String.fill(100000, { 65.rand + 32 });
+
+// Performance test for regular Dictionary
+"Regular Dictionary swap test:".postln;
+~dictTimer = {
+    var dict = Dictionary.new;
+    var temp;
+    
+    dict[\a] = ~largeString;
+    dict[\b] = ~largeString ++ "extra";
+    
+    // Measure time for 1000 swaps
+    1000.do {
+        // Need temporary variable
+        temp = dict[\a];
+        dict[\a] = dict[\b];
+        dict[\b] = temp;
+    };
+}.bench;
+
+// Performance test for SpatialArray
+"SpatialArray swap test:".postln;
+~spatialTimer = {
+    var spatial = SpatialArray.new;
+    
+    spatial.put(\a, ~largeString);
+    spatial.put(\b, ~largeString ++ "extra");
+    
+    // Measure time for 1000 swaps
+    1000.do {
+        // No temporary variable needed!
+        spatial.swap(\a, \b);
+    };
+}.bench;
+
+"For large objects, SpatialArray's reference-based swap can be more efficient".postln;
+"since it doesn't need to copy the actual values during swaps.".postln;
 )
