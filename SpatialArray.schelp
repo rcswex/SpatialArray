@@ -1,0 +1,138 @@
+TITLE:: SpatialArray
+summary:: A spatial array structure modeling physical world exchange concepts
+categories:: Collections>Data Structures
+related:: Classes/Dictionary, Classes/IdentityDictionary
+
+DESCRIPTION::
+SpatialArray is a special data structure that enables variable value swapping without using temporary variables. It implements a new variable operation model by simulating the intuitive nature of exchanging objects in the physical world.
+
+In the physical world, when we swap the positions of two objects, we pick them up simultaneously, exchange their positions in the air, and then place them down at the same time. We don't need a temporary "third position." SpatialArray implements a similar exchange method through a two-layer mapping from variable names to values.
+
+code::
+// Create a spatial array
+~arr = SpatialArray.new;
+
+// Create two variables
+~arr.createVariable(\a, 5);
+~arr.createVariable(\b, 10);
+
+// Swap their values without temporary variable
+~arr.swap(\a, \b);
+
+// Now a=10, b=5
+~arr.getValue(\a).postln; // Outputs 10
+~arr.getValue(\b).postln; // Outputs 5
+::
+
+CLASSMETHODS::
+
+METHOD:: new
+Creates a new SpatialArray instance
+
+code::
+~arr = SpatialArray.new;
+::
+
+INSTANCEMETHODS::
+
+METHOD:: createVariable
+Adds a new variable to the spatial array
+
+ARGUMENT:: name
+The variable name, typically a Symbol
+
+ARGUMENT:: value
+The initial value of the variable, can be any type
+
+code::
+~arr.createVariable(\a, 5);
+~arr.createVariable(\myVar, "a string");
+::
+
+METHOD:: getValue
+Gets the current value of a variable
+
+ARGUMENT:: name
+The name of the variable to query
+
+returns:: The current value of the variable
+
+code::
+~value = ~arr.getValue(\a);
+::
+
+METHOD:: setValue
+Sets the value of a variable
+
+ARGUMENT:: name
+The name of the variable to set
+
+ARGUMENT:: value
+The new value
+
+code::
+~arr.setValue(\a, 42);
+::
+
+METHOD:: swap
+Swaps the values of two variables without using a temporary variable
+
+ARGUMENT:: name1
+The name of the first variable
+
+ARGUMENT:: name2
+The name of the second variable
+
+code::
+~arr.swap(\a, \b);
+::
+
+METHOD:: debug
+Prints the internal structure of the spatial array, for debugging purposes
+
+code::
+~arr.debug;
+::
+
+EXAMPLES::
+
+Basic usage:
+
+code::
+// Create new instance
+~arr = SpatialArray.new;
+
+// Add variables
+~arr.createVariable(\a, 5);
+~arr.createVariable(\b, 10);
+
+// View internal structure
+~arr.debug;
+
+// Swap values
+~arr.swap(\a, \b);
+
+// Verify swap result
+~arr.getValue(\a).postln;
+~arr.getValue(\b).postln;
+::
+
+Using custom objects:
+
+code::
+// Define simple fruit objects
+~apple = (name: "apple", color: "red", weight: 0.2);
+~banana = (name: "banana", color: "yellow", weight: 0.15);
+
+// Put them in a spatial array
+~fruitsArr = SpatialArray.new;
+~fruitsArr.createVariable(\basket1, ~apple);
+~fruitsArr.createVariable(\basket2, ~banana);
+
+// Swap fruits between baskets
+~fruitsArr.swap(\basket1, \basket2);
+
+// Check results
+~fruitsArr.getValue(\basket1);
+~fruitsArr.getValue(\basket2);
+::
