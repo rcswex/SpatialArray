@@ -73,7 +73,13 @@ SpatialArray may initially seem similar to SuperCollider's standard Dictionary o
      : No built-in swap function, swapping values of two keys still requires a temporary variable:
 
      ```supercollider
-     // Dictionary swap requires temporary variable~d = Dictionary.new;~d.put(\a, 5);~d.put(\b, 10);~temp = ~d.at(\a);~d.put(\a, ~d.at(\b));~d.put(\b, ~temp);
+     // Dictionary swap requires temporary variable
+     ~d = Dictionary.new;
+     ~d.put(\a, 5);
+     ~d.put(\b, 10);
+     ~temp = ~d.at(\a);
+     ~d.put(\a, ~d.at(\b));
+     ~d.put(\b, ~temp);
      ```
 
    - SpatialArray
@@ -87,7 +93,12 @@ SpatialArray may initially seem similar to SuperCollider's standard Dictionary o
       method, no temporary variable needed:
 
      ```supercollider
-     // SpatialArray doesn't need temporary variable~arr = SpatialArray.new;~arr.createVariable(\a, 5);~arr.createVariable(\b, 10);~arr.swap(\a, \b); // Direct swap
+     // SpatialArray doesn't need temporary variable
+     ~arr = SpatialArray.new;
+     ~arr.createVariable(\a, 5);
+     ~arr.createVariable(\b, 10);
+     ~arr.swap(\a, \b);
+     // Direct swap
      ```
 
 3. **Design purpose**:
