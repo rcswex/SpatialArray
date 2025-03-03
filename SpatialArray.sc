@@ -1,106 +1,134 @@
 // SpatialArray.sc
-// Spatial Array: A structure allowing variable value exchange without temporary variables
+// A container that enables variable value exchange without temporary variables
 // Simulates the intuitive nature of swapping items in the physical world
 
 SpatialArray {
-    var <>valueSpace;  // Value storage space
-    var <>objectIDs;   // Mapping from names to IDs
-    var <>nextID;      // Next available ID
+    var <>variables;  // Direct mapping from names to values
 
     *new {
         ^super.new.init;
     }
 
     init {
-        valueSpace = IdentityDictionary.new;
-        objectIDs = IdentityDictionary.new;
-        nextID = 0;
+        variables = IdentityDictionary.new;
     }
 
-    // Create a variable and assign a value
-    createVariable { |name, value|
-        var id = nextID;
-        nextID = nextID + 1;
-        
-        // Store value and ID mapping
-        valueSpace[id] = value;
-        objectIDs[name] = id;
-        
-        ^name;
+    // Create a variable with a value
+    put { |key, value|
+        variables[key] = value;
+        ^key;
     }
     
-    // Get the value of a variable
-    getValue { |name|
-        var id = objectIDs[name];
-        if(id.isNil) {
-            Error("Variable '%' not found".format(name)).throw;
-        };
-        
-        ^valueSpace[id];
+    // Alias to put for backward compatibility and conceptual clarity
+    createVariable { |key, value|
+        ^this.put(key, value);
     }
     
-    // Set the value of a variable
-    setValue { |name, value|
-        var id = objectIDs[name];
-        if(id.isNil) {
-            Error("Variable '%' not found".format(name)).throw;
+    // Access a variable's value
+    at { |key|
+        var value = variables[key];
+        if(value.isNil and: { variables.includesKey(key).not }) {
+            Error("Variable '%' not found".format(key)).throw;
         };
-        
-        valueSpace[id] = value;
+        ^value;
     }
     
-    // Swap the values of two variables (no temporary variable needed)
-    swap { |name1, name2|
-        var id1, id2;
+    // Alias to at for backward compatibility
+    getValue { |key|
+        ^this.at(key);
+    }
+    
+    // Set a variable's value
+    put { |key, value|
+        if(variables.includesKey(key).not) {
+            Error("Variable '%' not found".format(key)).throw;
+        };
+        variables[key] = value;
+    }
+    
+    // Alias to put for backward compatibility
+    setValue { |key, value|
+        ^this.put(key, value);
+    }
+    
+    // Swap the values of two variables
+    swap { |key1, key2|
+        var val1, val2;
         
-        id1 = objectIDs[name1];
-        if(id1.isNil) {
-            Error("Variable '%' not found".format(name1)).throw;
+        if(variables.includesKey(key1).not) {
+            Error("Variable '%' not found".format(key1)).throw;
         };
         
-        id2 = objectIDs[name2];
-        if(id2.isNil) {
-            Error("Variable '%' not found".format(name2)).throw;
+        if(variables.includesKey(key2).not) {
+            Error("Variable '%' not found".format(key2)).throw;
         };
         
-        // Directly swap IDs, not values
-        objectIDs[name1] = id2;
-        objectIDs[name2] = id1;
+        // In SuperCollider, we need to use a temporary variable for the swap
+        // since we don't have pointer-level swapping as in C++
+        val1 = variables[key1];
+        val2 = variables[key2];
+        variables[key1] = val2;
+        variables[key2] = val1;
+    }
+    
+    // Collection interface methods
+    size {
+        ^variables.size;
+    }
+    
+    isEmpty {
+        ^variables.isEmpty;
+    }
+    
+    keys {
+        ^variables.keys;
+    }
+    
+    values {
+        ^variables.values;
+    }
+    
+    includes { |value|
+        ^variables.includes(value);
+    }
+    
+    includesKey { |key|
+        ^variables.includesKey(key);
+    }
+    
+    do { |function|
+        variables.do(function);
+    }
+    
+    keysValuesDo { |function|
+        variables.keysValuesDo(function);
+    }
+    
+    asArray {
+        ^variables.asArray;
+    }
+    
+    asList {
+        ^variables.asList;
+    }
+    
+    asDict {
+        ^variables.copy;
     }
     
     // Print internal state (for debugging)
     debug {
-        "Value Space:".postln;
-        valueSpace.keysValuesDo { |id, value|
-            "  % -> %".format(id, value).postln;
+        "SpatialArray Contents:".postln;
+        if(this.isEmpty) {
+            "  (empty)".postln;
+        } {
+            variables.keysValuesDo { |key, value|
+                "  % -> %".format(key, value).postln;
+            };
         };
-        
-        "Pointer Mappings:".postln;
-        objectIDs.keysValuesDo { |name, id|
-            "  % -> % (value: %)".format(name, id, valueSpace[id]).postln;
-        };
-    }
-}
-
-// Extension: Class supporting fruit objects
-Fruit {
-    var <>name, <>color, <>weight;
-    
-    *new { |name, color, weight|
-        ^super.new.init(name, color, weight);
-    }
-    
-    init { |argName, argColor, argWeight|
-        name = argName;
-        color = argColor;
-        weight = argWeight;
-    }
-    
-    asString {
-        ^"%(%, %kg)".format(name, color, weight);
     }
     
     printOn { |stream|
-        stream << this.asString;
+        stream << this.class.name << "[ " << variables.size << " variables ]";
     }
 }

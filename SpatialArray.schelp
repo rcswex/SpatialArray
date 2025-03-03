@@ -1,33 +1,35 @@
 TITLE:: SpatialArray
-summary:: A spatial array structure modeling physical world exchange concepts
-categories:: Collections>Data Structures
-related:: Classes/Dictionary, Classes/IdentityDictionary
+summary:: A container supporting intuitive value swapping
+categories:: Collections>Dictionaries
+related:: Classes/Dictionary, Classes/IdentityDictionary, Classes/Event
 
 DESCRIPTION::
-SpatialArray is a special data structure that enables variable value swapping without using temporary variables. It implements a new variable operation model by simulating the intuitive nature of exchanging objects in the physical world.
+SpatialArray is a dictionary-like container with specialized support for variable swapping operations. It models the intuitive way we exchange objects in the physical world, where we can swap two items without needing a temporary location.
 
-In the physical world, when we swap the positions of two objects, we pick them up simultaneously, exchange their positions in the air, and then place them down at the same time. We don't need a temporary "third position." SpatialArray implements a similar exchange method through a two-layer mapping from variable names to values.
-
+In traditional programming:
 code::
-// Create a spatial array
-~arr = SpatialArray.new;
-
-// Create two variables
-~arr.createVariable(\a, 5);
-~arr.createVariable(\b, 10);
-
-// Swap their values without temporary variable
-~arr.swap(\a, \b);
-
-// Now a=10, b=5
-~arr.getValue(\a).postln; // Outputs 10
-~arr.getValue(\b).postln; // Outputs 5
+// With regular variables
+~a = 5;
+~b = 10;
+~temp = ~a;  // Temporary variable needed
+~a = ~b;
+~b = ~temp;
 ::
+
+With SpatialArray:
+code::
+~arr = SpatialArray.new;
+~arr.put(\a, 5);
+~arr.put(\b, 10);
+~arr.swap(\a, \b);  // Direct swap without temporary variable
+::
+
+While regular Dictionary objects require a temporary variable for swapping, SpatialArray provides an optimized swap operation that more closely models physical world exchanges.
 
 CLASSMETHODS::
 
 METHOD:: new
-Creates a new SpatialArray instance
+Creates a new SpatialArray instance.
 
 code::
 ~arr = SpatialArray.new;
@@ -35,104 +37,267 @@ code::
 
 INSTANCEMETHODS::
 
-METHOD:: createVariable
-Adds a new variable to the spatial array
+METHOD:: put
+Stores a value at the specified key. Creates the key if it doesn't exist, or updates it if it does.
 
-ARGUMENT:: name
-The variable name, typically a Symbol
+ARGUMENT:: key
+The key, typically a Symbol.
 
 ARGUMENT:: value
-The initial value of the variable, can be any type
+The value to store.
+
+code::
+~arr.put(\a, 5);
+::
+
+METHOD:: createVariable
+An alias for put, maintaining backward compatibility.
+
+ARGUMENT:: key
+The variable name.
+
+ARGUMENT:: value
+The value to store.
 
 code::
 ~arr.createVariable(\a, 5);
-~arr.createVariable(\myVar, "a string");
+::
+
+METHOD:: at
+Retrieves the value at the specified key.
+
+ARGUMENT:: key
+The key to look up.
+
+returns:: The value associated with the key.
+
+code::
+~arr.at(\a);
 ::
 
 METHOD:: getValue
-Gets the current value of a variable
+An alias for at, maintaining backward compatibility.
 
-ARGUMENT:: name
-The name of the variable to query
+ARGUMENT:: key
+The key to look up.
 
-returns:: The current value of the variable
+returns:: The value associated with the key.
 
 code::
-~value = ~arr.getValue(\a);
+~arr.getValue(\a);
 ::
 
 METHOD:: setValue
-Sets the value of a variable
+An alias for put, maintaining backward compatibility.
 
-ARGUMENT:: name
-The name of the variable to set
+ARGUMENT:: key
+The key to update.
 
 ARGUMENT:: value
-The new value
+The new value.
 
 code::
-~arr.setValue(\a, 42);
+~arr.setValue(\a, 10);
 ::
 
 METHOD:: swap
-Swaps the values of two variables without using a temporary variable
+Exchanges the values of two keys.
 
-ARGUMENT:: name1
-The name of the first variable
+ARGUMENT:: key1
+The first key.
 
-ARGUMENT:: name2
-The name of the second variable
+ARGUMENT:: key2
+The second key.
 
 code::
 ~arr.swap(\a, \b);
 ::
 
 METHOD:: debug
-Prints the internal structure of the spatial array, for debugging purposes
+Prints the contents of the SpatialArray for inspection.
 
 code::
 ~arr.debug;
 ::
+
+METHOD:: size
+Returns the number of key-value pairs in the collection.
+
+returns:: An Integer.
+
+METHOD:: isEmpty
+Returns whether the collection is empty.
+
+returns:: A Boolean.
+
+METHOD:: keys
+Returns all keys in the collection.
+
+returns:: A Set of keys.
+
+METHOD:: values
+Returns all values in the collection.
+
+returns:: An Array of values.
+
+METHOD:: includes
+Checks if the collection contains a specific value.
+
+ARGUMENT:: value
+The value to search for.
+
+returns:: A Boolean.
+
+METHOD:: includesKey
+Checks if the collection contains a specific key.
+
+ARGUMENT:: key
+The key to check for.
+
+returns:: A Boolean.
+
+METHOD:: do
+Iterates over all values in the collection.
+
+ARGUMENT:: function
+A function to execute for each value.
+
+METHOD:: keysValuesDo
+Iterates over all key-value pairs in the collection.
+
+ARGUMENT:: function
+A function to execute for each key-value pair.
+
+METHOD:: asArray
+Converts the collection to an Array of key-value pairs.
+
+returns:: An Array.
+
+METHOD:: asList
+Converts the collection to a List of key-value pairs.
+
+returns:: A List.
+
+METHOD:: asDict
+Returns a copy of the internal dictionary.
+
+returns:: An IdentityDictionary.
 
 EXAMPLES::
 
 Basic usage:
 
 code::
-// Create new instance
+// Create a new spatial array
 ~arr = SpatialArray.new;
 
 // Add variables
-~arr.createVariable(\a, 5);
-~arr.createVariable(\b, 10);
+~arr.put(\a, 5);
+~arr.put(\b, 10);
 
-// View internal structure
-~arr.debug;
+// Access values
+~arr.at(\a).postln;  // Outputs 5
+~arr.at(\b).postln;  // Outputs 10
 
 // Swap values
 ~arr.swap(\a, \b);
 
-// Verify swap result
-~arr.getValue(\a).postln;
-~arr.getValue(\b).postln;
+// Verify swap
+~arr.at(\a).postln;  // Now outputs 10
+~arr.at(\b).postln;  // Now outputs 5
+
+// Using collection interface
+~arr.size.postln;    // Outputs 2
+~arr.keys.postln;    // Outputs Set[ \a, \b ]
+~arr.values.postln;  // Outputs [ 10, 5 ]
+
+// Iteration
+~arr.keysValuesDo { |k, v| 
+    "% -> %".format(k, v).postln;
+};
 ::
 
-Using custom objects:
+Swapping complex objects:
 
 code::
-// Define simple fruit objects
-~apple = (name: "apple", color: "red", weight: 0.2);
-~banana = (name: "banana", color: "yellow", weight: 0.15);
+// Define a simple Fruit class
+Fruit = {
+    var <>name, <>color, <>weight;
+    
+    *new { |name, color, weight|
+        ^super.new.init(name, color, weight);
+    }
+    
+    init { |argName, argColor, argWeight|
+        name = argName;
+        color = argColor;
+        weight = argWeight;
+    }
+    
+    asString {
+        ^"%(%, %kg)".format(name, color, weight);
+    }
+    
+    printOn { |stream|
+        stream << this.asString;
+    }
+};
+
+// Create fruit objects
+~apple = Fruit.new("apple", "red", 0.2);
+~banana = Fruit.new("banana", "yellow", 0.15);
 
 // Put them in a spatial array
-~fruitsArr = SpatialArray.new;
-~fruitsArr.createVariable(\basket1, ~apple);
-~fruitsArr.createVariable(\basket2, ~banana);
+~basket = SpatialArray.new;
+~basket.put(\left, ~apple);
+~basket.put(\right, ~banana);
 
-// Swap fruits between baskets
-~fruitsArr.swap(\basket1, \basket2);
+// Display initial state
+~basket.at(\left).postln;   // apple(red, 0.2kg)
+~basket.at(\right).postln;  // banana(yellow, 0.15kg)
 
-// Check results
-~fruitsArr.getValue(\basket1);
-~fruitsArr.getValue(\basket2);
+// Swap fruits
+~basket.swap(\left, \right);
+
+// Display result
+~basket.at(\left).postln;   // Now banana(yellow, 0.15kg)
+~basket.at(\right).postln;  // Now apple(red, 0.2kg)
+::
+
+Audio synthesis example:
+
+code::
+// Store synthesis parameters
+~synthParams = SpatialArray.new;
+~synthParams.put(\sine, (freq: 440, amp: 0.5));
+~synthParams.put(\saw, (freq: 220, amp: 0.3));
+
+// Create synths
+s.waitForBoot({
+    SynthDef(\test, { |freq=440, amp=0.5|
+        var sig = SinOsc.ar(freq) * amp;
+        Out.ar(0, sig ! 2);
+    }).store;
+    
+    // Use parameters from spatial array
+    ~sineParams = ~synthParams.at(\sine);
+    ~sineInstance = Synth(\test, [\freq, ~sineParams.freq, \amp, ~sineParams.amp]);
+    
+    // Swap parameters and create a new synth after 2 seconds
+    SystemClock.sched(2, {
+        ~synthParams.swap(\sine, \saw);
+        ~sineInstance.free;
+        
+        // Get the swapped parameters
+        ~newParams = ~synthParams.at(\sine);
+        ~sineInstance = Synth(\test, [\freq, ~newParams.freq, \amp, ~newParams.amp]);
+        
+        SystemClock.sched(2, {
+            ~sineInstance.free;
+            nil;
+        });
+        
+        nil;
+    });
+});
 ::
