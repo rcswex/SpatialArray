@@ -17,7 +17,7 @@ a = b;   // Assign b's value to a
 b = c;   // Assign the original a value (stored in c) to b
 ```
 
-Why does the programming world need this extra temporary storage when the physical world doesn't? This is the problem the SpatialArray Quark attempts to solve. By simulating the intuitive nature of physical world exchanges, SpatialArray provides a way to conceptually swap variables without temporary variables.
+Why does the programming world need this extra temporary storage when the physical world doesn't? This is the problem the SpatialArray Quark solves. Unlike previous attempts that only hid the temporary variable, this implementation uses a true reference-based architecture that eliminates the need for temporary value copies altogether.
 
 ## Installation
 
@@ -35,13 +35,13 @@ thisProcess.recompile;
 
 ## Design Philosophy
 
-SpatialArray is designed to bridge the conceptual gap between how we exchange objects in the physical world and how we swap values in programming:
+SpatialArray bridges the conceptual gap between physical world exchanges and programming by implementing a two-level reference architecture:
 
-1. **Container-based approach**: Variables become "containers" for values
-2. **Direct swap operations**: A specialized `swap` method exchanges values without temporaries
-3. **Standard collection interface**: Familiar SuperCollider collection methods
+1. **Reference-based architecture**: Keys map to indices, not directly to values
+2. **Pointer-like swapping**: Exchange references, not values
+3. **Zero-copy operations**: Swapping large objects is efficient with no value copies
 
-Unlike a standard SuperCollider Dictionary where you would need a temporary variable to swap values, SpatialArray provides a dedicated `swap` method:
+Unlike a standard SuperCollider Dictionary where you would need a temporary variable to swap values, SpatialArray's `swap` method exchanges only the references:
 
 ```supercollider
 // Using SpatialArray to swap a and b
@@ -49,17 +49,36 @@ Unlike a standard SuperCollider Dictionary where you would need a temporary vari
 ~arr.put(\a, 5);
 ~arr.put(\b, 10);
 
-// No temporary variable in your code
+// No temporary variable needed anywhere
 ~arr.swap(\a, \b);
+```
+
+## How It Works
+
+SpatialArray uses a unique two-level architecture:
+
+1. **Locations Dictionary**: Maps keys to indices in the values array
+2. **Values Array**: Stores the actual values
+
+When you swap two variables, only their indices in the locations dictionary are exchanged. The actual values in the values array never move! This is similar to how actual pointers work in lower-level languages - you're just changing what each variable name points to, not copying the values.
+
+```
+Before swap:
+  Locations:  { a → 0, b → 1 }
+  Values:     [ 5, 10 ]
+
+After swap:
+  Locations:  { a → 1, b → 0 }  ← Only these indices changed!
+  Values:     [ 5, 10 ]        ← Values array remains unchanged
 ```
 
 ## Differences from Standard SuperCollider Dictionary
 
-While SpatialArray may appear similar to SuperCollider's Dictionary, it offers:
+SpatialArray fundamentally differs from SuperCollider's Dictionary:
 
-1. **Specialized swap operation**: Optimized for exchanging values between keys
-2. **Conceptual model**: Designed to model physical world exchange patterns
-3. **Backward compatibility**: Maintains older method names (createVariable, getValue, setValue) alongside standard collection methods
+1. **True reference-based swapping**: No value copies during swaps
+2. **Two-level architecture**: Separate key-to-index and index-to-value mappings
+3. **Efficiency for large objects**: Swapping large objects only exchanges small indices
 
 ## Basic Usage
 
@@ -114,26 +133,26 @@ While SpatialArray may appear similar to SuperCollider's Dictionary, it offers:
 ~arr.asDict;   // Get copy of internal dictionary
 ```
 
-### Debugging
+### Debugging and Internal Structure
 
 ```supercollider
 // View internal structure
-~arr.debug;
+~arr.debug;  // Shows both the locations dictionary and values array
 ```
 
 ## Use Cases
 
 ### Simple Value Exchange
 
-The most basic use case is swapping two simple values, such as numbers or strings.
+The most basic use case is swapping simple values, such as numbers or strings, with zero-copy efficiency.
 
 ### Complex Object Exchange
 
-For complex objects, such as Synth parameter collections, SpatialArray provides a clean interface for exchanging settings.
+For complex objects like Synth parameter collections, SpatialArray provides an efficient interface for exchanging settings without copying potentially large data structures.
 
 ### Real-time Audio Applications
 
-In audio processing, it can be used to quickly swap different effect parameters, timbral settings, etc:
+In audio processing, quickly swap different effect parameters, timbral settings, etc. with minimal overhead:
 
 ```supercollider
 // Store two sets of synth parameters
@@ -141,13 +160,13 @@ In audio processing, it can be used to quickly swap different effect parameters,
 ~synthSettings.put(\bright, (freq: 880, amp: 0.4, pan: 0.7));
 ~synthSettings.put(\mellow, (freq: 440, amp: 0.3, pan: -0.3));
 
-// Switch between parameter sets in real-time
+// Switch between parameter sets in real-time with zero copying
 ~synthSettings.swap(\bright, \mellow);
 ```
 
 ### Combined with Patterns
 
-Combined with SuperCollider's pattern system to create dynamic musical structures:
+Combined with SuperCollider's pattern system to create dynamic musical structures with efficient swapping:
 
 ```supercollider
 // Store different rhythmic patterns
@@ -155,28 +174,31 @@ Combined with SuperCollider's pattern system to create dynamic musical structure
 ~patterns.put(\pattern1, Pseq([1, 2, 3, Rest()], inf));
 ~patterns.put(\pattern2, Pseq([Rest(), 1, 1, 2], inf));
 
-// Swap patterns during performance
+// Swap patterns efficiently during performance
 ~patterns.swap(\pattern1, \pattern2);
 ```
 
-## Technical Notes
+## Performance Considerations
 
-- SpatialArray provides dictionary-like functionality
-- Uses IdentityDictionary as the internal storage mechanism
-- Implements standard collection interface methods
+SpatialArray's unique approach offers several performance advantages:
+
+1. **Efficient swapping**: Only small indices are swapped, not the actual values
+2. **Memory efficiency**: Avoid unnecessary copies of large objects
+3. **Speed improvements**: For large objects, reference-based swapping can be significantly faster
 
 ## Examples
 
 Please refer to the accompanying `SpatialArrayExample.scd` file for complete examples, including:
 
-1. Basic numeric value exchanges
+1. Basic numeric value exchanges with internal structure visualization
 2. Fruit object exchange examples
 3. Parameter exchange examples for audio synthesis
 4. Collection interface usage
+5. Performance comparisons with standard Dictionary
 
 ## About
 
-The SpatialArray Quark was inspired by the conceptual difference between physical world and programming world exchange operations, aiming to provide a more intuitive variable operation model that is closer to human thinking.
+The SpatialArray Quark uses a reference-based architecture to truly implement the conceptual model of physical world exchanges, providing both an intuitive API and performance benefits for common swap operations.
 
 (cc) 2025 by Wenge CHEN.
 
