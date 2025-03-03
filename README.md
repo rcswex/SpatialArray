@@ -19,8 +19,6 @@ However, in traditional programming, swapping two variable values requires an ad
 
 Why does the programming world need this extra temporary storage when the physical world doesn't? This is the problem the SpatialArray Quark attempts to solve. By simulating the intuitive nature of physical world exchanges, SpatialArray provides a way to conceptually swap variables without temporary variables.
 
-This is a new spatial array structure designed for SuperCollider, focused on implementing value exchange operations without using temporary variables.
-
 ## Installation
 
 Copy the `SpatialArray.sc` file to your SuperCollider extensions directory:
@@ -37,85 +35,31 @@ thisProcess.recompile;
 
 ## Design Philosophy
 
-In the physical world, when we swap the positions of two objects, we manipulate them simultaneously, exchanging their positions in space and then setting them down at the same time, precisely maintaining their original spatial relationships. No "third position" as temporary storage is needed.
+SpatialArray is designed to bridge the conceptual gap between how we exchange objects in the physical world and how we swap values in programming:
 
-SpatialArray is designed based on this concept:
+1. **Container-based approach**: Variables become "containers" for values
+2. **Direct swap operations**: A specialized `swap` method exchanges values without temporaries
+3. **Standard collection interface**: Familiar SuperCollider collection methods
 
-1. **Separation of position and value**: Variable names are just references, values exist independently
-2. **ID layer mapping**: A two-layer mapping (variable name → ID → value) implements indirect referencing
-3. **Reference exchange**: Swap operations only exchange references, not values
-
-This allows us to swap variable values simply like this:
+Unlike a standard SuperCollider Dictionary where you would need a temporary variable to swap values, SpatialArray provides a dedicated `swap` method:
 
 ```supercollider
 // Using SpatialArray to swap a and b
 ~arr = SpatialArray.new;
-~arr.createVariable(\a, 5);
-~arr.createVariable(\b, 10);
+~arr.put(\a, 5);
+~arr.put(\b, 10);
 
-// No temporary variable needed
+// No temporary variable in your code
 ~arr.swap(\a, \b);
 ```
 
 ## Differences from Standard SuperCollider Dictionary
 
-SpatialArray may initially seem similar to SuperCollider's standard Dictionary or IdentityDictionary, but there are several key differences:
+While SpatialArray may appear similar to SuperCollider's Dictionary, it offers:
 
-1. **Two-layer mapping structure**:
-
-   - **Dictionary**: Implements a single key-value mapping (key → value)
-   - **SpatialArray**: Internally implements a two-layer mapping (variable name → ID → value), this additional indirect layer is the core innovation
-
-2. **Specialized swap operation**:
-
-   - Dictionary
-
-     : No built-in swap function, swapping values of two keys still requires a temporary variable:
-
-     ```supercollider
-     // Dictionary swap requires temporary variable
-     ~d = Dictionary.new;
-     ~d.put(\a, 5);
-     ~d.put(\b, 10);
-     ~temp = ~d.at(\a);
-     ~d.put(\a, ~d.at(\b));
-     ~d.put(\b, ~temp);
-     ```
-
-   - SpatialArray
-
-     : Provides a dedicated 
-
-     ```
-     swap
-     ```
-
-      method, no temporary variable needed:
-
-     ```supercollider
-     // SpatialArray doesn't need temporary variable
-     ~arr = SpatialArray.new;
-     ~arr.createVariable(\a, 5);
-     ~arr.createVariable(\b, 10);
-     ~arr.swap(\a, \b);
-     // Direct swap
-     ```
-
-3. **Design purpose**:
-
-   - **Dictionary**: Designed for general data organization and retrieval
-   - **SpatialArray**: Specifically designed to model physical world exchange patterns
-
-4. **Explicit ID layer**:
-
-   - SpatialArray maintains an ID layer, providing additional indirection, conceptually similar to the relationship between object position and identity in the physical world
-   - This indirection makes swap operations more intuitive, simulating exchange of object positions rather than changing the objects themselves
-
-5. **Debugging functionality**:
-
-   - SpatialArray's `debug` method can intuitively display all mapping relationships, helping to understand the connections between variables, IDs, and values
-
-While Dictionary may provide similar functionality in some scenarios, SpatialArray offers a clearer conceptual model, an interface optimized specifically for swap operations, and educational value in expressing the relationship between the physical world and programming models.
+1. **Specialized swap operation**: Optimized for exchanging values between keys
+2. **Conceptual model**: Designed to model physical world exchange patterns
+3. **Backward compatibility**: Maintains older method names (createVariable, getValue, setValue) alongside standard collection methods
 
 ## Basic Usage
 
@@ -125,18 +69,20 @@ While Dictionary may provide similar functionality in some scenarios, SpatialArr
 ~arr = SpatialArray.new;
 
 // Create variables
-~arr.createVariable(\a, 5);
-~arr.createVariable(\b, 10);
+~arr.put(\a, 5);           // Standard collection style
+~arr.createVariable(\b, 10); // Legacy style
 ```
 
 ### Getting and Setting Variable Values
 
 ```supercollider
 // Get value
-~a = ~arr.getValue(\a);  // Returns 5
+~a = ~arr.at(\a);       // Standard collection style
+~b = ~arr.getValue(\b); // Legacy style
 
 // Set value
-~arr.setValue(\a, 15);
+~arr.put(\a, 15);           // Standard collection style
+~arr.setValue(\b, 20);      // Legacy style
 ```
 
 ### Swapping Variable Values
@@ -148,7 +94,27 @@ While Dictionary may provide similar functionality in some scenarios, SpatialArr
 // Now a=10, b=5
 ```
 
-### Debugging View
+### Collection Interface
+
+```supercollider
+// Size and empty checks
+~arr.size;     // Number of key-value pairs
+~arr.isEmpty;  // Whether the collection is empty
+
+// Keys and values
+~arr.keys;     // All keys
+~arr.values;   // All values
+
+// Iteration
+~arr.keysValuesDo { |k, v| [k, v].postln };
+
+// Conversion
+~arr.asArray;  // Convert to array
+~arr.asList;   // Convert to list
+~arr.asDict;   // Get copy of internal dictionary
+```
+
+### Debugging
 
 ```supercollider
 // View internal structure
@@ -163,29 +129,50 @@ The most basic use case is swapping two simple values, such as numbers or string
 
 ### Complex Object Exchange
 
-For complex objects, such as Synth parameter collections, SpatialArray's advantages become more apparent, avoiding large amounts of data copying.
+For complex objects, such as Synth parameter collections, SpatialArray provides a clean interface for exchanging settings.
 
 ### Real-time Audio Applications
 
-In audio processing, it can be used to quickly swap different effect parameters, timbral settings, etc.
+In audio processing, it can be used to quickly swap different effect parameters, timbral settings, etc:
+
+```supercollider
+// Store two sets of synth parameters
+~synthSettings = SpatialArray.new;
+~synthSettings.put(\bright, (freq: 880, amp: 0.4, pan: 0.7));
+~synthSettings.put(\mellow, (freq: 440, amp: 0.3, pan: -0.3));
+
+// Switch between parameter sets in real-time
+~synthSettings.swap(\bright, \mellow);
+```
 
 ### Combined with Patterns
 
-Combined with SuperCollider's pattern system, it can create dynamically changing musical structures.
+Combined with SuperCollider's pattern system to create dynamic musical structures:
+
+```supercollider
+// Store different rhythmic patterns
+~patterns = SpatialArray.new;
+~patterns.put(\pattern1, Pseq([1, 2, 3, Rest()], inf));
+~patterns.put(\pattern2, Pseq([Rest(), 1, 1, 2], inf));
+
+// Swap patterns during performance
+~patterns.swap(\pattern1, \pattern2);
+```
 
 ## Technical Notes
 
-- SpatialArray implements a two-layer mapping structure in SuperCollider
+- SpatialArray provides dictionary-like functionality
 - Uses IdentityDictionary as the internal storage mechanism
-- All operations are based on symbol lookups, efficient and intuitive
+- Implements standard collection interface methods
 
 ## Examples
 
-Please refer to the accompanying `SpatialArray_Examples.scd` file for complete examples, including:
+Please refer to the accompanying `SpatialArrayExample.scd` file for complete examples, including:
 
 1. Basic numeric value exchanges
 2. Fruit object exchange examples
 3. Parameter exchange examples for audio synthesis
+4. Collection interface usage
 
 ## About
 
