@@ -8,13 +8,13 @@ However, in traditional programming, swapping two variable values requires an ad
 
 ```supercollider
 // Traditional method to swap a and b
-~a = 5;
-~b = 10;
+a = 5;
+b = 10;
 
 // Requires temporary variable c
-~c = ~a;   // First store a's value in temporary variable c
-~a = ~b;   // Assign b's value to a
-~b = ~c;   // Assign the original a value (stored in c) to b
+c = a;   // First store a's value in temporary variable c
+a = b;   // Assign b's value to a
+b = c;   // Assign the original a value (stored in c) to b
 ```
 
 Why does the programming world need this extra temporary storage when the physical world doesn't? This is the problem the SpatialArray Quark attempts to solve. By simulating the intuitive nature of physical world exchanges, SpatialArray provides a way to conceptually swap variables without temporary variables.
